@@ -1,0 +1,6 @@
+[submodule "chatapp-backend"]
+	path = chatapp-backend
+	url = git@github.com:ValentinZoia/chatapp-backend.git
+[submodule "chatapp-frontend"]
+	path = chatapp-frontend
+	url = git@github.com:ValentinZoia/chatapp-frontend.git
