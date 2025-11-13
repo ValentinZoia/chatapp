@@ -57,18 +57,191 @@ Built a chat system that is:
 - 🟫 Custom Error Formating
 
 ## 🏗️ Architecture
-### Cache Aside Pattern
-**Rdis: The Real Backbone**
-In modern-day software development speed is a non-negotiable performance matrix. And to enhance the performance of your software and increase the response speed caching is a must-have tool. 
+
+### **Redis: The Real Backbone**
 Redis didnt just store jobs -- it became our system´s communication hub:
  - Pub/Sub for real-time updates
  - Rate-limiting using Redis tokens
  - Caching frequently fetched data
 Because Redis operates in memory, the performance gain was huge. For high-concurrency scenarios, it´s indispensable.
 
+### Cache Aside Pattern
+In modern-day software development speed is a non-negotiable performance matrix. And to enhance the performance of your software and increase the response speed caching is a must-have tool.
+
+**Getting the tool tou need**
+Before we roll up our sleeves and get into the code, lets ensure we have all the tools installes. You´ll need.
+ - `ioredis`: This is the Redis client for Nodejs that lets us interact with Redis from our NestJS app.
+ - Install with: `npm i ioredis`
+
+**Lets Set Up Redis -- Building our Redis Service**
+Now that we´ve got the dependencies in place, lets set up our Redis Service.
+This service will be our one-stop shop for interacting with Redis. You'll be able to store, retrieve, and delete data with just a few lines of code.
+ ```typescript
+   import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import Redis from 'ioredis';
+import { ErrorManager } from '../../utils/error.manager';
+
+@Injectable()
+export class RedisCacheService implements OnModuleDestroy {
+  private readonly context = 'CacheService';
+  private client: Redis;
+
+  constructor() {
+    this.client = new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      password: process.env.REDIS_PASSWORD,
+    });
+  }
+
+  onModuleDestroy() {
+    this.client.quit();
+  }
+
+  async set(key: string, value: unknown, ttlInSeconds: number): Promise<void> {
+    const strValue = JSON.stringify(value);
+    if (ttlInSeconds && ttlInSeconds > 0) {
+      await this.client.set(key, strValue, 'EX', ttlInSeconds); // 'EX' sets an expiration time
+    } else {
+      await this.client.set(key, strValue);
+    }
+  }
+
+  async get<T>(key: string): Promise<T | null> {
+    const raw = await this.client.get(key);
+    if (!raw) return null;
+    try {
+      // Usar reviver para convertir ISO strings de vuelta a Date objects
+      return JSON.parse(raw, this.dateReviver) as T;
+    } catch (error) {
+      // const duration = Date.now() - startTime;
+      //       this.logger.error(
+      //         `Redis cache error, trying get data: ${error.message}`,
+      //         error.stack,
+      //         this.context,
+      //         { duration },
+      //       );
+      throw ErrorManager.createSignatureError(error.message);
+    }
+  }
+
+  /**
+   * Reviver para JSON.parse que convierte ISO date strings a Date objects
+   * Identifica strings que parecen ISO 8601 y los convierte a Date
+   */
+  private dateReviver = (key: string, value: unknown): unknown => {
+    if (typeof value === 'string') {
+      // Patrón ISO 8601: YYYY-MM-DDTHH:mm:ss.sssZ
+      const isoDatePattern =
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
+      if (isoDatePattern.test(value)) {
+        return new Date(value);
+      }
+    }
+    return value;
+  };
+
+  async del(key: string): Promise<number> {
+    return await this.client.del(key);
+  }
+  // Delete keys by pattern using SCAN (safer than KEYS)
+  async delByPattern(pattern: string): Promise<number> {
+    let cursor = '0';
+    let deleted = 0;
+    do {
+      const [nextCursor, keys] = await this.client.scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        '100',
+      );
+      cursor = nextCursor;
+      if (keys.length) {
+        const res = await this.client.del(...keys);
+        deleted += res;
+      }
+    } while (cursor !== '0');
+    return deleted;
+  }
+
+  // Helper wrap: try cache, otherwise call fn and cache result
+  async wrap<T>(
+    key: string,
+    ttlSeconds: number,
+    fn: () => Promise<T>,
+  ): Promise<T> {
+    const cached = await this.get<T>(key);
+    if (cached !== null) return cached;
+    const val = await fn();
+    await this.set(key, val, ttlSeconds);
+    return val;
+  }
+}
+ ```
+This service will help The Redis client connect to your Redis server when your app starts. If you’re running it locally or in Docker, this is super handy.
+Also in this we’ve got a built-in cleanup when the app shuts down. Redis connections will close properly, so you don’t have any stray processes running.
+
+Then we need weap this service in the module. Before i created a pubsub.module. for instance a RedisPubSub client and that it can be available around the application. So we gonna use it for export the RedisCacheService also.
+ ```typescript
+  import { RedisCacheService } from '@/src/common/cache/services/cache.service';
+import { PUB_SUB } from '@/src/common/constants';
+import { Global, Module } from '@nestjs/common';
+import { RedisPubSub } from 'graphql-redis-subscriptions';
+import Redis from 'ioredis';
+
+/*
+
+- Crear instancia RedisPubSub y exportarla como provider global
+- Todos los resolvers/services compartiran la misma conexion a Redis
+   asi evitar instancias duplicadas.
+
+- Patrón Pub/Sub : productores PUBlican mensajes en un canal, y
+  consumidores se SUBscriben a canales y reciben mensajes.
+
+- Redis Pub/Sub: mecanismo muy rápido, basado en memoria, fire-and-forget.
+   -No hay persistencia
+   - No hay ack/offsets
+
+
+*/
+
+const host = process.env.REDIS_HOST || 'localhost';
+const port = parseInt(process.env.REDIS_PORT || '6379', 10);
+const password = process.env.REDIS_PASSWORD;
+
+const pubSub = new RedisPubSub({
+  connection: {
+    host,
+    port,
+    password,
+    retryStrategy: (times) => Math.min(times * 50, 2000),
+  },
+  publisher: new Redis({ host, port, password }),
+  subscriber: new Redis({ host, port, password }),
+});
+
+@Global()
+@Module({
+  providers: [
+    {
+      provide: PUB_SUB,
+      useValue: pubSub,
+    },
+    RedisCacheService, // <- here
+  ],
+  exports: [PUB_SUB, RedisCacheService], //<- here
+})
+export class PubSubModule {}
+ ```
+Now we can use the RedisCacheService and RedisPubSub, whereever we want in the app.
+Remember import the PubSubModule in app.module.
+
+
 Here is a simple example of how i use Redis for caching.
 ### Concept:
-[IMAGE]
+<img src="/images/cache-strategy.png" >
+
  ```typescript
    // Read-through caching strategy
 const cacheKey = `cache:chatroom:messages:${chatroomId}`;
@@ -86,7 +259,12 @@ await cacheService.set(cacheKey, data, 60); // 60s TTL
 ### Real-life use case
 Check how i use it. In ChatroomResolver for getChatroomById Query.
  ```typescript
- 
+ export class ChatroomResolver {
+  constructor(
+    private readonly chatroomService: ChatroomService,
+    private readonly cacheService: RedisCacheService,
+  ) {}
+
   @Query(() => ChatroomEntity, {
     name: 'getChatroomById',
     description: 'Get a chatroom by id',
@@ -107,12 +285,89 @@ Check how i use it. In ChatroomResolver for getChatroomById Query.
     }
     return result;
   }
+}
  ```
 By leveraging Redis for caching, you can significantly reduce database load, speed up response times, and scale your application more effectively. Here’s a recap of the benefits:
 - **Faster Response Times**: Cache database query results for frequently accessed data.
 - **Reduced Database Load**: Avoid querying the database for the same data repeatedly.
 - **Improved User Experience**: Deliver lightning-fast responses even under high traffic conditions.
 
+Study guide: [How to Use Redis with NestJS: A Simple Guide to Caching](https://medium.com/@dipghoshraj/how-to-use-redis-with-nestjs-a-simple-guide-to-caching-b9408d96243e)
+
+
+### Event-Driven Architecture
+**Redis Pub/Sub**
+Redis comes with a built-in Pub/Sub (publish/suscribe) system that lets applications talk to each other in real time. One app can publish a message and any other app thats suscribed to the same channel will instantly receive it.
+<img src="/images/redis-pubsub-1.png" >
+<img src="/images/redis-pubsub-2.png" >
+
+Think of it like a radio station: the publisher is the radio tower, and suscribers are the listeners. If your radio is off, you miss the broadcast -- Redis doestn keep a history of messages.
+**What is Redis Pub/Sub?**
+At its core:
+- Publisher sends messages to a chanel
+- Subscribers listen and get the messages rigth away.
+- No direct connection needed-publishers dont know who's listening, and subscribers dont care who´s sending.
+- Real-time by design perfect for live updates and instant notifications.
+
+Before in Cache section, i´ve show the pubsub.module with the instance. We'll use that.
+So, let me show you how we can use this feature. We gonna create a mutation 'sendMessage', inside we publish the message.
+Later we gonna create a Subscription to get the message.
+ ```typescript
+
+  @Mutation(() => MessageEdge)
+  async sendMessage(
+    @Args('chatroomId') chatroomId: number,
+    @Args('content') content: string,
+    @Context() { req, correlationId }: GraphQLContext,
+  ): Promise<MessageEdge> {
+
+    const newMessage = await this.chatroomService.sendMessage(
+      chatroomId,
+      content,
+      req.user.sub,
+    );
+   
+    if (!newMessage.node.createdAt) {
+      newMessage.node.createdAt = new Date();
+    }
+
+    await this.pubSub
+      .publish(`newMessage.${chatroomId}`, { newMessage }) //newMessage is the publish key
+      .catch((err) => {
+        this.logger.error(
+          'Filed to publish event to Redis',
+          err.stack,
+          this.context,
+          {
+            event: NEW_MESSAGE,
+            messageId: newMessage.cursor,
+            error: err.message,
+          },
+        );
+      });
+
+    return newMessage;
+  }
+
+ ```
+```typescript
+//this graphql subscription must be called newMessage
+@Subscription(() => MessageEdge, {
+    nullable: true,
+    resolve: (value) => {
+      return value.newMessage;
+    },
+  })
+  newMessage(@Args('chatroomId', { type: () => Int }) chatroomId: number) {
+    this.logger.log(
+      'New Subscription client connected: postCreated',
+      this.context,
+    );
+    return this.pubSub.asyncIterableIterator(`newMessage.${chatroomId}`);//newMessage is the public key
+  }
+```
+Just like that. The name of the graphql subscription must be the same of the publish key.
+In this case the publish key is newMessage, so the method must be called newMessage.
 
 
 ### Infrastructure Optimizations That Made a Difference
