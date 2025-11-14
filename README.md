@@ -634,48 +634,168 @@ async getChatroomById(){ ... }
 
 
 
-## 📊 Monitoring & Observability
+## 📊 Logging & Monitoring
+I gonna try explains you how logging and moniroting are implemented in this NestJS application that uses GraphQL. I covers the goals, log levels, architecture, and a step-by-step walkthrough of the provided code: a global logger module (**Winston wrapper**), a GraphQL `ApolloServer` plugin for deep GraphQL lifecycle logging, a middleware to populate `correlationId`, and the bootstrap (`main.ts`) integration.
 
-### Structured Logging
+The goal is to produce structured, searchable logs that are useful for debugging, auditing, performance analysis and security while avoiding leaking sensitive data.
 
-```json
-{
-  "service": "chatapp",
-  "correlationId": "unique-id-per-request",
-  "operationName": "sendMessage",
-  "context": "ChatroomResolver",
-  "level": "info",
-  "message": "Message sent successfully",
-  "userId": 123,
-  "chatroomId": 456,
-  "duration": 45,
-  "cacheHit": false,
-  "timestamp": "2025-11-10T20:00:00Z"
-}
-```
+### Why logging matters
+Logging is the process of registering events, errors and activities that happen in your application. It's crucial for:
+ - Dbugging -- reproduce and investigate failures
+ - Monitoring -- track health and performance over time
+ - Auditing -- keep a trace of important actions
+ - Analysis -- usage and metrics
+ - Security -- detect anomalies and incidents
+### What we include in each log entry
+Typical fields included in logs for this app:
+ - `timestamp`
+ - `level` (ERROR, WARN, LOG, DEBUG, VERBOSE)
+ - `correlationId` -- to trace a request across services
+ - `context` -- logical area or class
+ - `request` information (method(Query, Mutation), path, args) when applicable
+ - `duration`/ `responseTime`
 
-### Correlation ID Tracking
-
-- Permite trazar un request a lo largo de todo el sistema
-- Útil para debugging en entornos distribuidos
-- Agregado en middleware
+In production we *usually* only emit `WARN` and `ERROR` to reduce noise; local and staging environments can emit `DEBUG` or `VERBOSE`.
 
 
-## 🔐 Seguridad Multinivel
-
-### Autenticación
-
-- JWT tokens con expiry
-- Refresh token rotation
-- Secure cookie storage
-
-### Autorización
-
+### 1) `ILogger` interface & `LOGGER_SERVICE` token
+First we gonna create the interface wich is the contract your app code depends on. And the token for DI. The token is for the logger can be injected anywhere using the token jeje.
 ```typescript
-@UseGuards(GraphqlAuthGuard)  // Usuario autenticado
-@UseGuards(ChatroomAccessGuard)  // Miembro del chatroom
-async sendMessage(...) { ... }
+// src/common/constants/logger.constants.ts
+export const LOGGER_SERVICE = Symbol('LOGGER_SERVICE');
+export const LOG_CONTEXT = {
+  HTTP: 'HTTP',
+  APP: 'Application',
+  DATABASE: 'Database',
+  AUTH: 'Authentication',
+  VALIDATION: 'Validation',
+} as const;
+
+// src/common/interfaces/logger.interface.ts
+export interface ILogger {
+  log(message: string, context?: string, meta?: Record<string, any>): void;
+  error(message: string, trace?: string, context?: string, meta?: Record<string, any>): void;
+  warn(message: string, context?: string, meta?: Record<string, any>): void;
+  debug(message: string, context?: string, meta?: Record<string, any>): void;
+  verbose(message: string, context?: string, meta?: Record<string, any>): void;
+}
+
+
 ```
+When implementing `WinstonLoggerService`, map these methods to structured JSON output and include the `correlationId` if present in meta.
+
+### 2) Logger module (DI registration)
+This module registers a global logger provider so it can be injected anywhere via the `LOGGER_SERVICE` token.
+```typescript
+import { Global, Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { WinstonLoggerService } from './services/winston-logger.service';
+import { LOGGER_SERVICE } from '../constants/logger.constants';
+
+
+@Global()
+@Module({
+imports: [ConfigModule],
+providers: [
+{
+provide: LOGGER_SERVICE,
+useClass: WinstonLoggerService,
+},
+],
+exports: [LOGGER_SERVICE],
+})
+export class LoggerModule {}
+```
+>Note:`WinstonLoggerService` should implement the `ILogger` interface and adapt Winston transports,formatters and levels.
+
+### 3) `LoggingPlugin` -- Apollo Server Plugin (GraphQL layer)
+This plugin run inside the GraphQL lifecycle and has deep visibility over the GraphQL AST, operations names, variables, and each resolver execution. Use it to log parsing/validations errors, resolver timings, and operations-level errors.
+Key notes about the plugin behavior:
+ - Skips `IntrospectionQuery` to avoid noise.
+ - Logs a request-start entry with `operationName`, `correlationId` and a sanitized query.
+ - Hooks into `parsingDidStart`, `validationDidStart`, `executionDidStart` (and `willResolveField`) to capture errors and durations per-resolver.
+ - Uses `sanitizeQuery` and `sanitizeArgs` to avoid logging sensitive data.
+ - Emits `verbose` for successful resolver calls and `warn`/`error` for problematic cases.
+
+PLease check out the logger.plugin here. : [LoggerPlugin](https://github.com/ValentinZoia/chatapp-backend/blob/master/src/common/plugins/logging.plugin.ts)
+> And remember add to providers in app.module
+
+# 4) Real Life use cases.
+The last thing to do is use it. So look this examples
+main.ts:
+```typescript
+
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+
+  //Logger personalizado - usando winston
+  const logger = app.get<ILogger>(LOGGER_SERVICE);
+  app.useLogger(logger);
+
+  
+
+  // Obtener configuración
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('PORT', 3000);
+  const nodeEnv = configService.get<string>('NODE_ENV', 'development');
+
+  await app.listen(port);
+
+  logger.log(
+    `Application is running in ${nodeEnv} mode on: http://localhost:${port}`,//message
+    'Bootstrap', //Context
+  );
+  logger.log(
+    `GraphQL Playground available at: http://localhost:${port}/graphql`,
+    'Bootstrap',
+  );
+
+  
+}
+void bootstrap()
+```
+chatroom.resolver.ts:
+```typescript
+@Resolver()
+export class AuthResolver {
+  private readonly context = 'AuthResolver';
+  constructor(
+    @Inject(LOGGER_SERVICE)
+    private readonly logger: ILogger,
+    private readonly aurhService: AuthService,
+  ) {}
+
+  @Mutation(() => RegisterResponse, {
+    name: 'register',
+    description: 'register user',
+  })
+  async register(
+    @Args('RegisterInput', { type: () => RegisterInput })
+    credentials: RegisterInput,
+    @Context() ctx: GraphQLContext,
+  ) {
+    this.logger.log('Mutation: register', this.context, {
+      correlationId: ctx?.correlationId,
+      email: credentials.email,
+    });
+    return this.aurhService.register(credentials, ctx.res);
+  }
+}
+
+```
+
+
+
+
+
+
+
+
+
+
 
 - ## 🚀 Quick Start
 
