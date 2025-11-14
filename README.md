@@ -720,7 +720,7 @@ Key notes about the plugin behavior:
 Please take a look the logger.plugin here. : [LoggerPlugin](https://github.com/ValentinZoia/chatapp-backend/blob/master/src/common/plugins/logging.plugin.ts)
 > And remember add to providers in app.module
 
-# 4) Real Life use cases.
+### 4) Real Life use cases.
 The last thing to do is use it. So look this examples
 main.ts:
 ```typescript
