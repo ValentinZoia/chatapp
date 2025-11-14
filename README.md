@@ -2,11 +2,13 @@
 
 <img src="/images/miniatura.png" >
 
-# 🚀 ChatApp Backend | Real-time Chat API con GraphQL, WebSockets & Advanced Caching
+<img src='./images/icon.png' width='60px' />
+
+# 🚀 ChatApp FULLSTACK | Real-time Chat APP con React, Nestjs GraphQL, WebSockets & Advanced Caching
 
 
 
-> Backend application demonstrating advanced patterns,
+> Fullstack application demonstrating advanced patterns,
   best practices, performance optimization enterprise-level architecture and cache-aside pattern
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?logo=typescript)](https://www.typescriptlang.org/)
