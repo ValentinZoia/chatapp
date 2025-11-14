@@ -4,7 +4,7 @@
 
 <img src='./images/icon.png' width='60px' />
 
-# 🚀 ChatApp FULLSTACK | Real-time Chat APP con React, Nestjs GraphQL, WebSockets & Advanced Caching
+# 🚀 ChatApp FULLSTACK | Real-time Chat APP with React, Nestjs GraphQL, WebSockets & Advanced Caching
 
 
 
