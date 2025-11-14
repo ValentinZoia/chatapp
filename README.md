@@ -717,7 +717,7 @@ Key notes about the plugin behavior:
  - Uses `sanitizeQuery` and `sanitizeArgs` to avoid logging sensitive data.
  - Emits `verbose` for successful resolver calls and `warn`/`error` for problematic cases.
 
-PLease check out the logger.plugin here. : [LoggerPlugin](https://github.com/ValentinZoia/chatapp-backend/blob/master/src/common/plugins/logging.plugin.ts)
+Please take a look the logger.plugin here. : [LoggerPlugin](https://github.com/ValentinZoia/chatapp-backend/blob/master/src/common/plugins/logging.plugin.ts)
 > And remember add to providers in app.module
 
 # 4) Real Life use cases.
