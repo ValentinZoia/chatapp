@@ -500,7 +500,11 @@ subscription NewMessage($chatroomId: Int!) {
 | Tailwind CSS, Radix UI, Shadcn          | UI Framework     | `tailwindcss`, `@radix-ui/react-*`, `lucide-react,` |
 | React Hook Form and Zod for Validations | Form             | `react-hook-form`, `zod`                            |
 | Zustand                                 | State Management |           `zustand`                                 |
+| ApolloClient, Codegen, GraphQL          | GrapqhQL         |`@apollo/client`,`graphql`,`@graphql-codegen/cli`    |
 
+Get Started with Apollo Client and Codegen, follow the links below.
+[Codegen](https://the-guild.dev/graphql/codegen/docs/getting-started)
+[Apollo Client](https://www.apollographql.com/docs/react/get-started)
 
 ## ⭐ Features
 ### User Management
