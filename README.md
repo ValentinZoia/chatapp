@@ -59,7 +59,36 @@ Built a chat system that is:
 - 🟫 Custom Error Formating
 
 ## 👁️ Pages Preview
+<p align='center'>
+<img src="/images/register-modal-portrait.png" width="40%"  style="max-width: 200px; min-width: 120px;">
+<img src="/images/login-modal-portrait.png" width="40%"  style="max-width: 200px; min-width: 120px;">
+<img src="/images/home-portrait.png" width="40%"  style="max-width: 200px; min-width: 120px;">
+ </p>
+ <p align='center'>
+<img src="/images/crear-sala-modal-portrait.png" width="40%"  style="max-width: 200px; min-width: 120px;">
+<img src="/images/mis-salas-modal-portrait.png" width="40%"  style="max-width: 200px; min-width: 120px;">
 
+ </p>
+  <p align='center'>
+<img src="/images/user-config-modal-portrait.png" width="40%"  style="max-width: 200px; min-width: 120px;">
+<img src="/images/editar-perfil-modal-portrait.png" width="40%"  style="max-width: 200px; min-width: 120px;">
+
+ </p>
+   <p align='center'>
+<img src="/images/room-portrait.png" width="40%"  style="max-width: 200px; min-width: 120px;">
+<img src="/images/editar-sala-modal-portrait.png" width="40%"  style="max-width: 200px; min-width: 120px;">
+
+ </p>
+  <p align='center'>
+<img src="/images/agregar-usuarios-sala-modal-portrait.png" width="40%"  style="max-width: 200px; min-width: 120px;">
+<img src="/images/eliminar-sala-modal-portrait.png" width="40%"  style="max-width: 200px; min-width: 120px;">
+
+ </p>
+
+
+
+
+ 
 ## 🏗️ Architecture
 
 ### **Redis: The Real Backbone**
