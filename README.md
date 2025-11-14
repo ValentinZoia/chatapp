@@ -442,7 +442,7 @@ subscription NewMessage($chatroomId: Int!) {
 
 
 ### Infrastructure Optimizations That Made a Difference
-**Dockerized Everything**. Each NestJs instance, Main DB´s, and Rdis server rain in its own container. This made autoscaling on Kubernetes a breeze.
+**Dockerized Everything**. Each NestJs instance, Main DB´s, and Redis server ran in its own container. This made autoscaling on Kubernetes a breeze.
 
 
 ## 🛠️ Technology Stack
