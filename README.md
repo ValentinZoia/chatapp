@@ -369,68 +369,50 @@ Later we gonna create a Subscription to get the message.
 Just like that. The name of the graphql subscription must be the same of the publish key.
 In this case the publish key is newMessage, so the method must be called newMessage.
 
+```graphql
+mutation SendMessage($chatroomId: Float!, $content: String!) {
+    sendMessage(chatroomId: $chatroomId, content: $content) {
+      node {
+        id
+        content
+        createdAt
+        user {
+          id
+          fullname
+          avatarUrl
+        }
+      }
+      cursor
+    }
+  }
+
+
+
+subscription NewMessage($chatroomId: Int!) {
+    newMessage(chatroomId: $chatroomId) {
+      node {
+        id
+        content
+        createdAt
+        user {
+          id
+          fullname
+          avatarUrl
+        }
+      }
+      cursor
+    }
+  }
+
+
+```
+
 
 ### Infrastructure Optimizations That Made a Difference
 **Dockerized Everything**. Each NestJs instance, Main DB´s, and Rdis server rain in its own container. This made autoscaling on Kubernetes a breeze.
 
 
 ## 🛠️ Technology Stack
-
-
-
-### Real-time Features
-
-- ✅ Live user presence tracking
-- ✅ Typing indicators (typing/stopped typing)
-- ✅ Real-time message subscriptions
-- ✅ User join/leave events
-- ✅ WebSocket connection management
-
-- ## 📈 Logging & Observability (Enterprise-grade)
-
-- ✅ **Structured Logging** (Winston JSON format)
-- ✅ **Request Correlation IDs** (For tracing)
-- ✅ **Operation-level Logging** (Auth, mutations, queries)
-- ✅ **Performance Metrics** (Duration tracking)
-- ✅ **Error Tracking** (Stack traces, context)
-- ✅ **Cache Hit/Miss Logging** (Debug caching)
-- ✅ **Redis Event Logging** (Pub/Sub tracking)
-- ✅ **GraphQL Error Plugin** (Custom error formatting)
-- ✅ **Subscription Logging** (Real-time connection tracking)
-
-**Performance**
-
-- Redis multi-tier caching (Cache-Aside pattern)
-- Query optimization with cursor-based pagination
-- Global rate limiting (3 req/s, 100 req/min)
-- Per-operation rate limits (distributed via Redis)
-- Efficient real-time subscriptions via WebSockets
-
-
-**Security**
-
-- JWT authentication with refresh token rotation
-- bcrypt password hashing (10 salt rounds)
-- HTTP-only secure cookies with SameSite policy
-- Input validation via class-validator
-- Rate limiting to prevent abuse
-
-**Observability**
-
-- Structured logging with Winston (JSON format)
-- Request correlation IDs for tracing
-- Performance metrics (duration tracking)
-- Cache hit/miss tracking
-- GraphQL error plugin with custom formatting
-
-**Real-Time Features**
-
-- WebSocket subscriptions for messages
-- Live user presence tracking (Redis Sets)
-- Typing indicators with efficient broadcasting
-- User join/leave events
-
-## Technology Stack
 ### Core Framework
 
 | Technology     | Version | Purpose                       | Key Packages |
@@ -487,112 +469,132 @@ In this case the publish key is newMessage, so the method must be called newMess
 | Zustand                                 | State Management |           `zustand`                                 |
 
 
+## ⭐ Features
+### User Management
+ - ✅ User registration with validation
+ - ✅ Secure login with JWT tokens
+ - ✅ Profile updates (including avatar upload)
+ - ✅ User search functionality
+ - ✅ Session management with refresh tokens
+
+### Chatroom Operations
+- ✅ Create public/private chatrooms
+- ✅ Add/remove members with access control
+- ✅ Chatroom metadata (name, description, color, image)
+- ✅ List chatrooms per user with caching
+- ✅ Delete chatrooms with cascade cleanup
+
+### Messaging
+- ✅ Send text messages with validation
+- ✅ Image upload via GraphQL multipart
+- ✅ Paginated message history (cursor-based)
+- ✅ Real-time message delivery via subscriptions
+- ✅ Message timestamps with timezone support
+
+### Real-Time Features
+- ✅ Live User Presence - Track active users per chatroom
+- ✅ Typing Indicators - Show when users are typing
+- ✅ Message Subscriptions - Instant message delivery
+- ✅ User Events - Join/leave notifications
+- ✅ Connection Management - WebSocket lifecycle hooks
 
 
-
-## ⚡ Core Features
-
-- **Enterprise Architecture** - Layered design with SOLID principles
-- **Performance** - Cache-Aside pattern with Redis (75x faster)
-- **Security** - JWT + bcrypt + Authorization Guards + Rate Limiting
-- **Real-Time** - GraphQL subscriptions + WebSockets + Pub/Sub
-- **Observability** - Structured logging + Correlation IDs
-- **Production-Ready** - Docker, migrations, multi-environment
-
-## 🏗️ Patterns & Principles
-
-- Design Patterns: Guard, Interceptor, Repository, Factory, Strategy
-- SOLID Principles throughout
-- Event-Driven Architecture
-- Cache-Aside Pattern (Read-through caching)
-
-- Implemented Layered Architecture following SOLID principles
-   to ensure maintainability and scalability"
-
-  Optimized response time using Redis caching
-   resulting in 50-100ms improvement"
-
-- "Enabled real-time messaging using GraphQL subscriptions supporting 1000+ concurrent users"
-- "Enabled live presence tracking using Redis Sets supporting O(1) operations"
-- "Enabled typing indicators using efficient broadcasting preventing message floods"
-
-- ### Database & Storage
-
-- **PostgreSQL 15** - ACID-compliant relational DB
-- **Prisma ORM** - Type-safe query builder + migrations
-- **Redis 7** - In-memory caching + Pub/Sub
-
-- ### Authentication & Security
-
-- **JWT** - Stateless authentication
-- **bcrypt** - Industry-standard password hashing
-- **Custom Guards** - Fine-grained authorization
-
-## ⚡ Optimizaciones de Performance
-
-### Caching Inteligente
-```typescript
-// Cache-Aside Pattern implementado
-const cacheKey = `cache:chatroom:getForUser:${userId}`;
-
-// Try cache first
-const cached = await cacheService.get<ChatroomEntity[]>(cacheKey);
-if (cached) return cached;
-
-// Fallback to database
-const result = await this.chatroomService.getChatroomsForUser(userId);
-
-// Populate cache
-if (result.length > 0) {
-  await cacheService.set(cacheKey, result, 30); // 30s TTL
-}
-
-return result;
-````
-
-**Beneficios:**
-
-- Reduce latencia (50-100ms vs 1-10ms desde cache)
-- Disminuye carga en DB
-- Escalable horizontalmente
-
-### Pagination Eficiente
-
-```typescript
-// Cursor-based pagination (vs offset)
-// Ventaja: No necesita contar todos los registros
-
-const messages = await prisma.message.findMany({
-  where: { chatroomId },
-  take: 20,
-  skip: cursor ? 1 : 0, // Skip cursor si existe
-  cursor: cursor ? { id: cursor } : undefined,
-  orderBy: { createdAt: 'desc' },
-});
+## Performance & Optimization
+### Caching Strategy : - [Cache Asside Pattern](#cache-asside-pattern)
+### Database Optimization
+**Cursor-Based Pagination**
+Instead of loading large amounts of data on the frontend, the API returns a limited set of items along with a cursor that points to the next batch. This way the client only fetches what it needs, which reduces payload size and speeds up the UI.
+```graphql
+query GetMessagesForChatroom($chatroomId: Float!, $take: Int!, $cursor: Int) {
+    getMessagesForChatroom(
+      chatroomId: $chatroomId
+      take: $take
+      cursor: $cursor
+    ) {
+      edges {
+        node {
+          id
+          content
+          imageUrl
+          createdAt
+          user {
+            id
+            fullname
+            avatarUrl
+          }
+        }
+        cursor
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      totalCount
+    }
+  }
 ```
 
-## 🌍 Features Reales
+### Rate Limiting
+For this technical i use `@nestjs/throttler` that is recomended for nestjs oficial doc.
+```typescript
+ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        throttlers: [
+          {
+            name: 'long',
+            ttl: seconds(60),
+            limit: 100,
+          },
+        ],
+        // Storage de Redis
+        storage: new ThrottlerStorageRedisService({
+          host: configService.get('REDIS_HOST', 'localhost'),
+          port: configService.get('REDIS_PORT', 6379),
+          password: configService.get('REDIS_PASSWORD'),
 
-### Real-Time Messaging
+          // Opciones adicionales
+          keyPrefix: 'throttler:', // Prefijo para keys
 
-- WebSocket subscriptions
-- Live delivery confirmation
-- Typing indicators
-- User presence tracking
+          // TLS para producción
+          ...(configService.get('REDIS_TLS') === 'true' && {
+            tls: {},
+          }),
+        }),
+      }),
+    }),
 
-### Chatroom Management
 
-- Create/delete chatrooms
-- Add/remove members
-- Metadata (name, description, color, image)
-- Access control (public/private)
+```
+Custom Rate-Limiting for specific queries and mutations.
+```typescript
 
-### User Management
+//Mutations
+@Mutation()
+@Throttle({ short: { limit: 2, ttl: seconds(3) } })
+async sendMessage() { ... }
 
-- Registration & authentication
-- Profile updates (avatar support)
-- User search
-- Session management
+@Mutation()
+@Throttle({ short: { limit: 1, ttl: seconds(3) } }) // RateLimit mas estricto - 1 por 3 segundos para auth
+async register() { ... }
+
+
+//Queries
+@Query()
+@Throttle({ short: { limit: 10, ttl: seconds(5) } }) // 10 requests/5s
+async getChatroomById(){ ... }
+
+//Skip throttle para todas las subscripciones - se puede hacer por la GrapqhQLThrottlerGuard
+   @Subscription()
+  @SkipThrottle()
+  newMessage() { ... }
+```
+
+
+
+
+
 
 ## 📊 Monitoring & Observability
 
@@ -620,17 +622,6 @@ const messages = await prisma.message.findMany({
 - Útil para debugging en entornos distribuidos
 - Agregado en middleware
 
-### Rate Limiting Distribuido
-
-```typescript
-// Redis-backed throttling
-@Mutation()
-@Throttle({ short: { limit: 2, ttl: seconds(3) } })
-async sendMessage(
-  @Args('chatroomId') chatroomId: number,
-  @Args('content') content: string
-) { ... }
-```
 
 ## 🔐 Seguridad Multinivel
 
@@ -660,38 +651,49 @@ async sendMessage(...) { ... }
 ### Installation
 
 ```bash
-# Clone repository
-git clone <repo>
+# 1. Clone repository
+git clone https://github.com/ValentinZoia/chatapp-backend.git
 cd chatapp-backend
 
-# Install dependencies
+# 2. Install dependencies
 npm install
 
-# Setup environment
+# 3. Setup environment variables
 cp .env.example .env.development
 
-# Setup database
+# 4. Configure .env.development
+# DATABASE_URL="postgresql://user:password@localhost:5432/chatapp"
+# REDIS_URL="redis://localhost:6379"
+# JWT_SECRET="your-secret-key"
+
+# 5. Run database migrations
 npm run prisma:migrate
 
-# Start development server
+# 6. (Optional) Seed database
+npm run prisma:seed
+
+# 7. Start development server - before start all docker services
 npm run start:dev
 ```
 
 ### Docker Compose
 
 ```bash
-# Start all services (PostgreSQL + Redis + Backend)
+# Start all services (PostgreSQL + Redis)
 docker-compose up -d
 
 # View logs
 docker-compose logs -f
+
+# Stop services
+docker-compose down
 ```
 
 ## 📚 Project Structure
 
 ```
 src/
-├── modules/                 # Feature modules
+├── modules/                # Feature modules
 │   ├── auth/               # Authentication & JWT
 │   ├── user/               # User management
 │   ├── chatroom/           # Chatroom operations
@@ -699,9 +701,16 @@ src/
 │   └── PubSub/             # Redis Pub/Sub setup
 ├── common/                 # Shared utilities
 │   ├── cache/              # Redis caching service
+│   ├── constants/          # Constants for Inject dependencies
+│   ├── filter/             # GraphQL excpetion filter
 │   ├── guards/             # Custom Guards
 │   ├── interceptors/       # Request interceptors
 │   ├── middleware/         # Custom middleware
+│   ├── plugins/            # Logger Plugin to catch graphql context
+│   ├── throttler/          # GraphQLThrottlerGuard -> give to throttler the graphql context
+│   ├── token/              # TokenService -> verify the refreshtoken
+│   ├── types/              # GraphQLExecutionTypes
+│   ├── interfaces/         # GraphQLContext, ILogger, etc
 │   ├── logger/             # Logging configuration
 │   └── utils/              # Helper functions
 ├── app.module.ts           # Root module
@@ -727,12 +736,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 📧 Contact
 
 - **Author:** Valentín Zoia
-- **Email:** valentin.zoia@example.com
+- **Email:** valentinzoia@gmail.com
 - **LinkedIn:** [Profile](https://linkedin.com/in/valentinzoia)
 - **Portfolio:** [Website](https://valentinzoia.dev)
 
 ---
 
-**Made with ❤️ using NestJS, GraphQL, and TypeScript**
+**Built with ❤️ and best practices**
 
 
