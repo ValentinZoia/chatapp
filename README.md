@@ -22,7 +22,7 @@
 
 ## 🎯 What & Why
 ### What is Futbol Chat?
-**Production-ready real-time chat API**. If you are an apassionete of futbol argentino and you search discuss about teams, players and whatever you want, this is your place. Built to demonstrate enterprise-level software engineering skills. It´s not just a chat application--it´s a showcase of architectural thinking, performance optimization, security best practices, and scalable system design. 
+**Production-ready real-time chat API**. If you are passionate about futbol argentino and are looking to discuss teams, players and whatever you want, this is your place. Built to demonstrate enterprise-level software engineering skills. It´s not just a chat application--it´s a showcase of architectural thinking, performance optimization, security best practices, and scalable system design. 
 ### Why I Built This
 This project was designed to demonstrate:
  - **Architectural Expertise** - Layered architecture, SOLID principles, and proven design patterns
@@ -57,6 +57,8 @@ Built a chat system that is:
 - 🟫 Correlation IDs for Request Tracing
 - 🟫 Performance Metrics
 - 🟫 Custom Error Formating
+
+## 👁️ Pages Preview
 
 ## 🏗️ Architecture
 
@@ -502,7 +504,8 @@ subscription NewMessage($chatroomId: Int!) {
 
 
 ## Performance & Optimization
-### Caching Strategy : - [Cache Asside Pattern](#cache-asside-pattern)
+### Caching Strategy :
+[Cache Aside Pattern](#cache-aside-pattern)
 ### Database Optimization
 **Cursor-Based Pagination**
 Instead of loading large amounts of data on the frontend, the API returns a limited set of items along with a cursor that points to the next batch. This way the client only fetches what it needs, which reduces payload size and speeds up the UI.
