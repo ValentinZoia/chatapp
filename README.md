@@ -4,7 +4,7 @@
 
 <img src='./images/icon.png' width='60px' />
 
-# ⚽ ChatApp FULLSTACK | Real-time Chat APP with React, Nestjs GraphQL, WebSockets & Advanced Caching
+# ⚽ Futbol Chat FULLSTACK | Real-time Chat APP with React, Nestjs GraphQL, WebSockets & Advanced Caching
 
 
 
@@ -22,7 +22,7 @@
 
 ## 🎯 What & Why
 ### What is Futbol Chat?
-**Production-ready real-time chat API**. If you are passionate about futbol argentino and are looking to discuss teams, players and whatever you want, this is your place. Built to demonstrate enterprise-level software engineering skills. It´s not just a chat application--it´s a showcase of architectural thinking, performance optimization, security best practices, and scalable system design. 
+**Production-ready real-time chat APP**. If you are passionate about futbol argentino and are looking to discuss teams, players and whatever you want, this is your place. Built to demonstrate enterprise-level software engineering skills. It´s not just a chat application--it´s a showcase of architectural thinking, performance optimization, security best practices, and scalable system design. 
 ### Why I Built This
 This project was designed to demonstrate:
  - **Architectural Expertise** - Layered architecture, SOLID principles, and proven design patterns
