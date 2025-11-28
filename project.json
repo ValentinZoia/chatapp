@@ -13,7 +13,7 @@
     "images/room-portrait.png",
     "images/editar-sala-modal-portrait.png",
     "images/agregar-usuarios-sala-modal-portrait.png",
-    "images/eliminar-sala-modal-portrait.png",
+    "images/eliminar-sala-modal-portrait.png"
   ],
   "tags": ["react", "nestjs", "graphql", "postgresql", "redis"],
   "published": true
