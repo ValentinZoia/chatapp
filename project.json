@@ -1,0 +1,20 @@
+{
+  "title": "⚽ Futbol Chat FULLSTACK",
+  "description": "Real-time Chat APP with React, Nestjs GraphQL, WebSockets & Advanced Caching",
+  "preview": "images/miniatura.png",
+  "screenshots": [
+    "images/register-modal-portrait.png",
+    "images/login-modal-portrait.png",
+    "images/home-portrait.png",
+    "images/crear-sala-modal-portrait.png",
+    "images/mis-salas-modal-portrait.png",
+    "images/user-config-modal-portrait.png",
+    "images/editar-perfil-modal-portrait.png",
+    "images/room-portrait.png",
+    "images/editar-sala-modal-portrait.png",
+    "images/agregar-usuarios-sala-modal-portrait.png",
+    "images/eliminar-sala-modal-portrait.png",
+  ],
+  "tags": ["react", "nestjs", "graphql", "postgresql", "redis"],
+  "published": true
+} 
