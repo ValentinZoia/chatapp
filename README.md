@@ -894,9 +894,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 📧 Contact
 
 - **Author:** Valentín Zoia
-- **Email:** valentinzoia@gmail.com
+- **Email:** zoiavalentin.dev@gmail.com
 - **LinkedIn:** [Profile](https://linkedin.com/in/valentinzoia)
-- **Portfolio:** [Website](https://valentinzoia.dev)
+- **Portfolio:** [Website](https://valentinzoia.vercel.app)
 
 ---
 
